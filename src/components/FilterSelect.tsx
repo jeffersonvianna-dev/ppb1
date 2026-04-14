@@ -12,6 +12,7 @@ interface FilterSelectProps {
   onChange: (value: string) => void;
   placeholder: string;
   searchPlaceholder: string;
+  compact?: boolean;
 }
 
 export default function FilterSelect({
@@ -21,6 +22,7 @@ export default function FilterSelect({
   onChange,
   placeholder,
   searchPlaceholder,
+  compact = false,
 }: FilterSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -45,7 +47,7 @@ export default function FilterSelect({
   const selectedLabel = options.find((o) => o.value === value)?.label || placeholder;
 
   return (
-    <div className="field field-inline field-combobox" ref={rootRef}>
+    <div className={`field field-inline field-combobox ${compact ? 'field-compact' : ''}`} ref={rootRef}>
       <label>{label}</label>
       <button
         type="button"

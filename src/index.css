@@ -60,6 +60,7 @@ input[type="search"]::placeholder { color: var(--text-muted); }
 
 .field-inline { min-width: 200px; }
 .field-combobox { position: relative; min-width: 250px; }
+.field-combobox.field-compact { min-width: 120px; }
 .combobox-trigger { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid var(--gray-mid); border-radius: 8px; background: var(--white); color: var(--text); font: inherit; font-size: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .combobox-trigger:hover, .combobox-trigger.open { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0, 91, 172, .1); }
 .combobox-count { flex-shrink: 0; padding: 3px 8px; border-radius: 999px; background: var(--blue-pale); color: var(--blue-dark); font-size: 12px; font-weight: 800; }

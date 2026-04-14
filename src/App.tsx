@@ -197,7 +197,8 @@ export default function App() {
                   value={serieFilter}
                   onChange={setSerieFilter}
                   placeholder="Todas"
-                  searchPlaceholder="Buscar série..."
+                  searchPlaceholder="Buscar..."
+                  compact
                 />
               )}
               <div className="field field-inline search-field">
