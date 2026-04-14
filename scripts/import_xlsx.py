@@ -25,6 +25,12 @@ import time
 import pandas as pd
 import psycopg2
 
+# Força stdout em UTF-8 (Windows default é cp1252, quebra com filenames unicode)
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 DB_URL = os.environ.get("SUPABASE_DB_URL")
 F1 = os.environ.get("XLSX_DIA1") or os.environ.get("XLSX_PATH")
 F2 = os.environ.get("XLSX_DIA2")

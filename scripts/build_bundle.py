@@ -12,6 +12,11 @@ import time
 from pathlib import Path
 import psycopg2
 
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 DB_URL = os.environ.get("SUPABASE_DB_URL")
 if not DB_URL:
     print("ERRO: defina SUPABASE_DB_URL", file=sys.stderr)
