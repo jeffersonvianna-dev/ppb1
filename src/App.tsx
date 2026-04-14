@@ -7,11 +7,9 @@ import DataTable from './components/DataTable';
 import { COLUMNS, type ActiveView } from './components/tableColumns';
 import {
   fetchAvailableFilters,
-  fetchEscolaList,
   fetchEscolaView,
   fetchSeducView,
   fetchSummary,
-  fetchUreList,
   fetchUreView,
   type AggRow,
 } from './lib/api';
@@ -19,28 +17,17 @@ import {
 type SortConfig = { key: string; direction: 'asc' | 'desc' };
 
 export default function App() {
-  const [bimestre, setBimestre] = useState<number | null>(null);
-  const [tipoProva, setTipoProva] = useState<string>('');
   const [activeView, setActiveView] = useState<ActiveView>('seduc');
   const [selectedUre, setSelectedUre] = useState('');
   const [selectedEscolaId, setSelectedEscolaId] = useState('');
+  const [selectedEscolaLabel, setSelectedEscolaLabel] = useState('');
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'perc_dia2', direction: 'asc' });
 
-  const { data: filters } = useQuery({
-    queryKey: ['filters'],
-    queryFn: fetchAvailableFilters,
-  });
+  const { data: filters } = useQuery({ queryKey: ['filters'], queryFn: fetchAvailableFilters });
 
-  useEffect(() => {
-    if (filters && bimestre === null && filters.bimestres.length > 0) {
-      setBimestre(filters.bimestres[0]);
-    }
-    if (filters && !tipoProva && filters.tipos_prova.length > 0) {
-      setTipoProva(filters.tipos_prova[0]);
-    }
-  }, [filters, bimestre, tipoProva]);
-
+  const bimestre = filters?.bimestres[0] ?? null;
+  const tipoProva = filters?.tipos_prova[0] ?? '';
   const ready = bimestre !== null && !!tipoProva;
 
   const { data: summary = null, isLoading: isLoadingSummary } = useQuery({
@@ -49,40 +36,50 @@ export default function App() {
     enabled: ready,
   });
 
-  const { data: ureList = [] } = useQuery({
-    queryKey: ['ureList', bimestre, tipoProva],
-    queryFn: () => fetchUreList(bimestre!, tipoProva),
+  const { data: seducData = [], isLoading: isLoadingSeduc } = useQuery({
+    queryKey: ['seduc', bimestre, tipoProva],
+    queryFn: () => fetchSeducView(bimestre!, tipoProva),
     enabled: ready,
   });
 
+  const ureOptions = useMemo(
+    () => seducData.map((r) => ({ value: String(r.ure), label: String(r.ure) })),
+    [seducData]
+  );
   const resolvedUre = useMemo(() => {
-    if (ureList.length === 0) return '';
-    return ureList.includes(selectedUre) ? selectedUre : ureList[0];
-  }, [ureList, selectedUre]);
+    if (ureOptions.length === 0) return '';
+    return ureOptions.find((o) => o.value === selectedUre) ? selectedUre : ureOptions[0].value;
+  }, [ureOptions, selectedUre]);
 
-  const { data: escolaList = [] } = useQuery({
-    queryKey: ['escolaList', bimestre, tipoProva, resolvedUre],
-    queryFn: () => fetchEscolaList(bimestre!, tipoProva, resolvedUre),
-    enabled: ready && !!resolvedUre && activeView !== 'seduc',
+  const { data: ureData = [], isLoading: isLoadingUre } = useQuery({
+    queryKey: ['ure', bimestre, tipoProva, resolvedUre],
+    queryFn: () => fetchUreView(bimestre!, tipoProva, resolvedUre),
+    enabled: ready && !!resolvedUre,
   });
 
+  const escolaOptions = useMemo(
+    () => ureData.map((r) => ({ value: String(r.escola_id), label: String(r.escola) })),
+    [ureData]
+  );
   const resolvedEscolaId = useMemo(() => {
-    if (escolaList.length === 0) return '';
-    return escolaList.find((e) => e.escola_id === selectedEscolaId) ? selectedEscolaId : escolaList[0].escola_id;
-  }, [escolaList, selectedEscolaId]);
+    if (escolaOptions.length === 0) return '';
+    return escolaOptions.find((o) => o.value === selectedEscolaId) ? selectedEscolaId : escolaOptions[0].value;
+  }, [escolaOptions, selectedEscolaId]);
 
-  const { data: rawData = [], isLoading: isLoadingData } = useQuery({
-    queryKey: ['view', activeView, bimestre, tipoProva, resolvedUre, resolvedEscolaId],
-    queryFn: () => {
-      if (activeView === 'seduc') return fetchSeducView(bimestre!, tipoProva);
-      if (activeView === 'ure' && resolvedUre) return fetchUreView(bimestre!, tipoProva, resolvedUre);
-      if (activeView === 'escola' && resolvedEscolaId) return fetchEscolaView(bimestre!, tipoProva, resolvedEscolaId);
-      return Promise.resolve([]);
-    },
-    enabled: ready,
+  const { data: escolaData = [], isLoading: isLoadingEscola } = useQuery({
+    queryKey: ['escola', bimestre, tipoProva, resolvedEscolaId],
+    queryFn: () => fetchEscolaView(bimestre!, tipoProva, resolvedEscolaId),
+    enabled: ready && !!resolvedEscolaId && activeView === 'escola',
   });
 
-  const isLoading = isLoadingSummary || isLoadingData;
+  useEffect(() => {
+    setSearch('');
+  }, [activeView]);
+
+  const rawData =
+    activeView === 'seduc' ? seducData : activeView === 'ure' ? ureData : escolaData;
+  const isLoadingData =
+    activeView === 'seduc' ? isLoadingSeduc : activeView === 'ure' ? isLoadingUre : isLoadingEscola;
 
   const visibleData = useMemo(() => {
     let rows: AggRow[] = [...rawData];
@@ -120,48 +117,15 @@ export default function App() {
       setActiveView('ure');
     } else if (activeView === 'ure' && row.escola_id) {
       setSelectedEscolaId(String(row.escola_id));
+      setSelectedEscolaLabel(String(row.escola ?? ''));
       setActiveView('escola');
     }
   };
-
-  const bimestreOptions = (filters?.bimestres ?? []).map((b) => ({ value: String(b), label: `Bimestre ${b}` }));
-  const tipoOptions = (filters?.tipos_prova ?? []).map((t) => ({ value: t, label: t.replace(/_/g, ' ') }));
-  const ureOptions = ureList.map((u) => ({ value: u, label: u }));
-  const escolaOptions = escolaList.map((e) => ({ value: e.escola_id, label: e.escola }));
 
   return (
     <div>
       <Header lastUpdated="14 de abril de 2026" />
       <main className="page">
-        <div className="filter-bar">
-          <FilterSelect
-            label="Bimestre"
-            options={bimestreOptions}
-            value={bimestre !== null ? String(bimestre) : ''}
-            onChange={(v) => setBimestre(Number(v))}
-            placeholder="Selecione o bimestre"
-            searchPlaceholder="Buscar..."
-          />
-          <FilterSelect
-            label="Tipo de prova"
-            options={tipoOptions}
-            value={tipoProva}
-            onChange={setTipoProva}
-            placeholder="Selecione"
-            searchPlaceholder="Buscar..."
-          />
-          <div className="field search-field">
-            <label htmlFor="search">Busca nesta lista</label>
-            <input
-              id="search"
-              type="search"
-              placeholder="Filtrar..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-
         <SummaryCards summary={summary} isLoading={isLoadingSummary} />
 
         <div className="table-section">
@@ -171,14 +135,15 @@ export default function App() {
               <button className={`tab-button ${activeView === 'ure' ? 'active' : ''}`} onClick={() => setActiveView('ure')}>URE</button>
               <button className={`tab-button ${activeView === 'escola' ? 'active' : ''}`} onClick={() => setActiveView('escola')}>Escola</button>
             </div>
-            <div className="table-filters" style={{ display: activeView !== 'seduc' ? 'flex' : 'none' }}>
+
+            <div className="table-filters">
               {(activeView === 'ure' || activeView === 'escola') && (
                 <FilterSelect
                   label="URE"
                   options={ureOptions}
                   value={resolvedUre}
-                  onChange={setSelectedUre}
-                  placeholder="Selecione uma URE"
+                  onChange={(v) => { setSelectedUre(v); setSelectedEscolaId(''); }}
+                  placeholder="Selecione"
                   searchPlaceholder="Buscar URE..."
                 />
               )}
@@ -187,18 +152,38 @@ export default function App() {
                   label="Escola"
                   options={escolaOptions}
                   value={resolvedEscolaId}
-                  onChange={setSelectedEscolaId}
-                  placeholder="Selecione uma escola"
+                  onChange={(v) => {
+                    setSelectedEscolaId(v);
+                    const opt = escolaOptions.find((o) => o.value === v);
+                    if (opt) setSelectedEscolaLabel(opt.label);
+                  }}
+                  placeholder="Selecione"
                   searchPlaceholder="Buscar escola..."
                 />
               )}
+              <div className="field field-inline search-field">
+                <label htmlFor="search">Busca</label>
+                <input
+                  id="search"
+                  type="search"
+                  placeholder="Filtrar..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
             </div>
           </div>
+
+          {activeView === 'escola' && selectedEscolaLabel && (
+            <div className="table-subheader">
+              Turmas de <strong>{selectedEscolaLabel}</strong>
+            </div>
+          )}
 
           <DataTable
             columns={COLUMNS[activeView]}
             data={visibleData}
-            isLoading={isLoading}
+            isLoading={isLoadingData}
             sortConfig={sortConfig}
             onSort={handleSort}
             onRowClick={activeView !== 'escola' ? handleRowClick : undefined}

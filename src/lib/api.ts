@@ -20,8 +20,7 @@ export interface AggRow {
 }
 
 export interface SummaryRow {
-  total_alunos_dia1: number;
-  total_alunos_dia2: number;
+  total_alunos: number;
   total_lidos_dia1: number;
   total_lidos_dia2: number;
   perc_dia1: number;
@@ -73,26 +72,6 @@ export async function fetchEscolaView(bimestre: number, tipoProva: string, escol
     p_bimestre: bimestre,
     p_tipo_prova: tipoProva,
     p_escola_id: escolaId,
-  });
-  if (error) throw error;
-  return data || [];
-}
-
-export async function fetchUreList(bimestre: number, tipoProva: string): Promise<string[]> {
-  const { data, error } = await supabase.rpc('ppb1_get_ure_list', {
-    p_bimestre: bimestre,
-    p_tipo_prova: tipoProva,
-  });
-  if (error) throw error;
-  return (data || []).map((r: { ure: string }) => r.ure).filter(Boolean);
-}
-
-export async function fetchEscolaList(bimestre: number, tipoProva: string, ure: string): Promise<{ escola_id: string; escola: string }[]> {
-  if (!ure) return [];
-  const { data, error } = await supabase.rpc('ppb1_get_escola_list', {
-    p_bimestre: bimestre,
-    p_tipo_prova: tipoProva,
-    p_ure: ure,
   });
   if (error) throw error;
   return data || [];
