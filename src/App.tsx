@@ -5,17 +5,11 @@ import FilterSelect from './components/FilterSelect';
 import SummaryCards from './components/SummaryCards';
 import DataTable from './components/DataTable';
 import { COLUMNS, type ActiveView } from './components/tableColumns';
-import {
-  fetchAvailableFilters,
-  fetchEscolaView,
-  fetchResumoView,
-  fetchSeducView,
-  fetchSummary,
-  fetchUreView,
-  type AggRow,
-} from './lib/api';
+import { loadBundle, type Bundle } from './lib/bundle';
 
 type SortConfig = { key: string; direction: 'asc' | 'desc' };
+
+type Row = Record<string, string | number | null | undefined>;
 
 export default function App() {
   const [activeView, setActiveView] = useState<ActiveView>('resumo');
@@ -23,7 +17,7 @@ export default function App() {
   const [selectedEscolaId, setSelectedEscolaId] = useState('');
   const [selectedEscolaLabel, setSelectedEscolaLabel] = useState('');
   const [search, setSearch] = useState('');
-  const [serieFilter, setSerieFilter] = useState<string>('');
+  const [serieFilter, setSerieFilter] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'ure', direction: 'asc' });
 
   const NAME_KEY: Record<ActiveView, string> = {
@@ -33,93 +27,70 @@ export default function App() {
     escola: 'turma',
   };
 
-  // Default sort (alphabetical by name column) when changing view
   useEffect(() => {
+    setSearch('');
+    setSerieFilter('');
     if (activeView === 'resumo') {
       setSortConfig({ key: 'perc_dia2', direction: 'asc' });
     } else {
       setSortConfig({ key: NAME_KEY[activeView], direction: 'asc' });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView]);
 
-  const { data: filters } = useQuery({ queryKey: ['filters'], queryFn: fetchAvailableFilters });
-
-  const bimestre = filters?.bimestres[0] ?? null;
-  const tipoProva = filters?.tipos_prova[0] ?? '';
-  const ready = bimestre !== null && !!tipoProva;
-
-  const { data: summary = null, isLoading: isLoadingSummary } = useQuery({
-    queryKey: ['summary', bimestre, tipoProva],
-    queryFn: () => fetchSummary(bimestre!, tipoProva),
-    enabled: ready,
+  const { data: bundle, isLoading } = useQuery<Bundle>({
+    queryKey: ['bundle'],
+    queryFn: loadBundle,
   });
 
-  const { data: resumoData = [], isLoading: isLoadingResumo } = useQuery({
-    queryKey: ['resumo', bimestre, tipoProva],
-    queryFn: () => fetchResumoView(bimestre!, tipoProva),
-    enabled: ready,
-  });
+  const ureList = useMemo(() => (bundle ? bundle.seduc.map((r) => r.ure) : []), [bundle]);
 
-  const { data: seducData = [], isLoading: isLoadingSeduc } = useQuery({
-    queryKey: ['seduc', bimestre, tipoProva],
-    queryFn: () => fetchSeducView(bimestre!, tipoProva),
-    enabled: ready,
-  });
-
-  const ureOptions = useMemo(
-    () => seducData.map((r) => ({ value: String(r.ure), label: String(r.ure) })),
-    [seducData]
-  );
   const resolvedUre = useMemo(() => {
-    if (ureOptions.length === 0) return '';
-    return ureOptions.find((o) => o.value === selectedUre) ? selectedUre : ureOptions[0].value;
-  }, [ureOptions, selectedUre]);
+    if (ureList.length === 0) return '';
+    return ureList.includes(selectedUre) ? selectedUre : ureList[0];
+  }, [ureList, selectedUre]);
 
-  const { data: ureData = [], isLoading: isLoadingUre } = useQuery({
-    queryKey: ['ure', bimestre, tipoProva, resolvedUre],
-    queryFn: () => fetchUreView(bimestre!, tipoProva, resolvedUre),
-    enabled: ready && !!resolvedUre,
-  });
+  const escolasByUre = useMemo(() => {
+    if (!bundle) return [] as typeof bundle extends Bundle ? Bundle['escolas'] : never[];
+    return bundle.escolas.filter((e) => e.ure === resolvedUre);
+  }, [bundle, resolvedUre]);
 
-  const escolaOptions = useMemo(
-    () => ureData.map((r) => ({ value: String(r.escola_id), label: String(r.escola) })),
-    [ureData]
-  );
   const resolvedEscolaId = useMemo(() => {
-    if (escolaOptions.length === 0) return '';
-    return escolaOptions.find((o) => o.value === selectedEscolaId) ? selectedEscolaId : escolaOptions[0].value;
-  }, [escolaOptions, selectedEscolaId]);
-
-  const { data: escolaData = [], isLoading: isLoadingEscola } = useQuery({
-    queryKey: ['escola', bimestre, tipoProva, resolvedEscolaId],
-    queryFn: () => fetchEscolaView(bimestre!, tipoProva, resolvedEscolaId),
-    enabled: ready && !!resolvedEscolaId && activeView === 'escola',
-  });
+    if (escolasByUre.length === 0) return '';
+    return escolasByUre.find((e) => e.escola_id === selectedEscolaId)?.escola_id ?? escolasByUre[0].escola_id;
+  }, [escolasByUre, selectedEscolaId]);
 
   useEffect(() => {
-    setSearch('');
-    setSerieFilter('');
-  }, [activeView]);
+    if (!selectedEscolaLabel && resolvedEscolaId && bundle) {
+      const e = bundle.escolas.find((x) => x.escola_id === resolvedEscolaId);
+      if (e) setSelectedEscolaLabel(e.escola);
+    }
+  }, [resolvedEscolaId, selectedEscolaLabel, bundle]);
 
-  const rawData =
-    activeView === 'resumo' ? resumoData :
-    activeView === 'seduc' ? seducData :
-    activeView === 'ure' ? ureData : escolaData;
-  const isLoadingData =
-    activeView === 'resumo' ? isLoadingResumo :
-    activeView === 'seduc' ? isLoadingSeduc :
-    activeView === 'ure' ? isLoadingUre : isLoadingEscola;
+  const turmasByEscola = useMemo(() => {
+    if (!bundle) return [];
+    return bundle.turmas.filter((t) => t.escola_id === resolvedEscolaId);
+  }, [bundle, resolvedEscolaId]);
+
+  const rawData: Row[] = useMemo(() => {
+    if (!bundle) return [];
+    if (activeView === 'resumo') return bundle.resumo as unknown as Row[];
+    if (activeView === 'seduc') return bundle.seduc as unknown as Row[];
+    if (activeView === 'ure') {
+      return bundle.escolas.filter((e) => e.ure === resolvedUre) as unknown as Row[];
+    }
+    return turmasByEscola as unknown as Row[];
+  }, [bundle, activeView, resolvedUre, turmasByEscola]);
 
   const availableSeries = useMemo(() => {
     if (activeView !== 'escola') return [] as string[];
-    const order = ['4EF','5EF','6EF','7EF','8EF','9EF','1EM','2EM','3EM'];
-    const found = new Set(escolaData.map((r) => String(r.serie ?? '')).filter(Boolean));
+    const order = ['4EF', '5EF', '6EF', '7EF', '8EF', '9EF', '1EM', '2EM', '3EM'];
+    const found = new Set(turmasByEscola.map((r) => r.serie ?? '').filter(Boolean));
     return order.filter((s) => found.has(s));
-  }, [escolaData, activeView]);
+  }, [turmasByEscola, activeView]);
 
   const visibleData = useMemo(() => {
-    let rows: AggRow[] = [...rawData];
+    let rows: Row[] = [...rawData];
     if (activeView === 'escola' && serieFilter) {
       rows = rows.filter((r) => String(r.serie) === serieFilter);
     }
@@ -131,31 +102,31 @@ export default function App() {
         activeView === 'ure' ? 'escola' : 'turma';
       rows = rows.filter((r) => String(r[key] ?? '').toLowerCase().includes(q));
     }
-    // preserve server order for resumo on default sort
     const preserveOrder = activeView === 'resumo' && sortConfig.key === 'perc_dia2' && sortConfig.direction === 'asc';
-    if (!preserveOrder) rows.sort((a, b) => {
-      const va = a[sortConfig.key];
-      const vb = b[sortConfig.key];
-      if (typeof va === 'string' || typeof vb === 'string') {
-        const ta = String(va ?? '');
-        const tb = String(vb ?? '');
-        return sortConfig.direction === 'asc' ? ta.localeCompare(tb, 'pt-BR') : tb.localeCompare(ta, 'pt-BR');
-      }
-      const na = Number(va ?? 0);
-      const nb = Number(vb ?? 0);
-      return sortConfig.direction === 'asc' ? na - nb : nb - na;
-    });
-    // Append TOTAL row at end in resumo view (always last, never sorted/filtered)
-    if (activeView === 'resumo' && summary && rawData.length > 0) {
+    if (!preserveOrder) {
+      rows.sort((a, b) => {
+        const va = a[sortConfig.key];
+        const vb = b[sortConfig.key];
+        if (typeof va === 'string' || typeof vb === 'string') {
+          const ta = String(va ?? '');
+          const tb = String(vb ?? '');
+          return sortConfig.direction === 'asc' ? ta.localeCompare(tb, 'pt-BR') : tb.localeCompare(ta, 'pt-BR');
+        }
+        const na = Number(va ?? 0);
+        const nb = Number(vb ?? 0);
+        return sortConfig.direction === 'asc' ? na - nb : nb - na;
+      });
+    }
+    if (activeView === 'resumo' && bundle && rawData.length > 0) {
       rows.push({
         serie: 'TOTAL',
-        total_alunos: summary.total_alunos,
-        perc_dia1: Number(summary.perc_dia1),
-        perc_dia2: Number(summary.perc_dia2),
+        total_alunos: bundle.summary.total_alunos,
+        perc_dia1: Number(bundle.summary.perc_dia1),
+        perc_dia2: Number(bundle.summary.perc_dia2),
       });
     }
     return rows;
-  }, [rawData, search, serieFilter, sortConfig, activeView, summary]);
+  }, [rawData, search, serieFilter, sortConfig, activeView, bundle]);
 
   const handleSort = (key: string) => {
     if (sortConfig.key === key) {
@@ -165,7 +136,7 @@ export default function App() {
     }
   };
 
-  const handleRowClick = (row: AggRow) => {
+  const handleRowClick = (row: Row) => {
     if (activeView === 'seduc' && row.ure) {
       setSelectedUre(String(row.ure));
       setActiveView('ure');
@@ -176,11 +147,14 @@ export default function App() {
     }
   };
 
+  const ureOptions = ureList.map((u) => ({ value: u, label: u }));
+  const escolaOptions = escolasByUre.map((e) => ({ value: e.escola_id, label: e.escola }));
+
   return (
     <div>
-      <Header />
+      <Header atualizacao={bundle?.atualizacao ?? null} />
       <main className="page">
-        <SummaryCards summary={summary} isLoading={isLoadingSummary} />
+        <SummaryCards summary={bundle?.summary ?? null} isLoading={isLoading} />
 
         <div className="table-section">
           <div className="table-top">
@@ -248,7 +222,7 @@ export default function App() {
           <DataTable
             columns={COLUMNS[activeView]}
             data={visibleData}
-            isLoading={isLoadingData}
+            isLoading={isLoading}
             sortConfig={sortConfig}
             onSort={handleSort}
             onRowClick={activeView === 'seduc' || activeView === 'ure' ? handleRowClick : undefined}

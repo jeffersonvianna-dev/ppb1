@@ -1,5 +1,5 @@
 import { fmtInt, fmtPct } from '../lib/helpers';
-import type { SummaryRow } from '../lib/api';
+import type { SummaryRow } from '../lib/bundle';
 
 interface Props {
   summary: SummaryRow | null;

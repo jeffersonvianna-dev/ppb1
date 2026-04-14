@@ -1,8 +1,9 @@
-import type { AggRow } from '../lib/api';
 import type { ColumnDef } from './tableColumns';
 import { fmtInt, fmtPct } from '../lib/helpers';
 
-function renderCell(row: AggRow, col: ColumnDef) {
+export type Row = Record<string, string | number | null | undefined>;
+
+function renderCell(row: Row, col: ColumnDef) {
   const raw = row[col.key];
   if (raw === null || raw === undefined || raw === '') return '—';
   if (col.kind === 'int') return fmtInt(Number(raw));
@@ -16,11 +17,11 @@ function renderCell(row: AggRow, col: ColumnDef) {
 
 interface DataTableProps {
   columns: ColumnDef[];
-  data: AggRow[];
+  data: Row[];
   isLoading: boolean;
   sortConfig: { key: string; direction: 'asc' | 'desc' };
   onSort: (key: string) => void;
-  onRowClick?: (row: AggRow) => void;
+  onRowClick?: (row: Row) => void;
   variant?: 'default' | 'resumo';
 }
 
