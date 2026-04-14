@@ -23,7 +23,25 @@ export default function App() {
   const [selectedEscolaId, setSelectedEscolaId] = useState('');
   const [selectedEscolaLabel, setSelectedEscolaLabel] = useState('');
   const [search, setSearch] = useState('');
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'perc_dia2', direction: 'asc' });
+  const [serieFilter, setSerieFilter] = useState<string>('');
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'ure', direction: 'asc' });
+
+  const NAME_KEY: Record<ActiveView, string> = {
+    resumo: 'serie_order',
+    seduc: 'ure',
+    ure: 'escola',
+    escola: 'turma',
+  };
+
+  // Default sort (alphabetical by name column) when changing view
+  useEffect(() => {
+    if (activeView === 'resumo') {
+      setSortConfig({ key: 'perc_dia2', direction: 'asc' });
+    } else {
+      setSortConfig({ key: NAME_KEY[activeView], direction: 'asc' });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView]);
 
   const { data: filters } = useQuery({ queryKey: ['filters'], queryFn: fetchAvailableFilters });
 
@@ -81,6 +99,7 @@ export default function App() {
 
   useEffect(() => {
     setSearch('');
+    setSerieFilter('');
   }, [activeView]);
 
   const rawData =
@@ -92,8 +111,18 @@ export default function App() {
     activeView === 'seduc' ? isLoadingSeduc :
     activeView === 'ure' ? isLoadingUre : isLoadingEscola;
 
+  const availableSeries = useMemo(() => {
+    if (activeView !== 'escola') return [] as string[];
+    const order = ['4EF','5EF','6EF','7EF','8EF','9EF','1EM','2EM','3EM'];
+    const found = new Set(escolaData.map((r) => String(r.serie ?? '')).filter(Boolean));
+    return order.filter((s) => found.has(s));
+  }, [escolaData, activeView]);
+
   const visibleData = useMemo(() => {
     let rows: AggRow[] = [...rawData];
+    if (activeView === 'escola' && serieFilter) {
+      rows = rows.filter((r) => String(r.serie) === serieFilter);
+    }
     if (search) {
       const q = search.toLowerCase();
       const key =
@@ -126,7 +155,7 @@ export default function App() {
       });
     }
     return rows;
-  }, [rawData, search, sortConfig, activeView, summary]);
+  }, [rawData, search, serieFilter, sortConfig, activeView, summary]);
 
   const handleSort = (key: string) => {
     if (sortConfig.key === key) {
@@ -185,6 +214,16 @@ export default function App() {
                   }}
                   placeholder="Selecione"
                   searchPlaceholder="Buscar escola..."
+                />
+              )}
+              {activeView === 'escola' && availableSeries.length > 0 && (
+                <FilterSelect
+                  label="Série"
+                  options={[{ value: '', label: 'Todas' }, ...availableSeries.map((s) => ({ value: s, label: s }))]}
+                  value={serieFilter}
+                  onChange={setSerieFilter}
+                  placeholder="Todas"
+                  searchPlaceholder="Buscar série..."
                 />
               )}
               <div className="field field-inline search-field">

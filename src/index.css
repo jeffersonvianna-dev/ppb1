@@ -94,7 +94,8 @@ tbody tr:hover { background: var(--blue-pale); }
 tbody tr[style*="cursor"] td.td-name::after { content: " ›"; color: var(--blue); font-weight: 800; }
 
 .td-name {
-  font-weight: 600;
+  font-weight: 800;
+  color: var(--text-strong);
   max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
