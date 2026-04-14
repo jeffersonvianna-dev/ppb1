@@ -39,6 +39,7 @@ create table if not exists "2026_ppb1"."resultados_turmas" (
   total_gabaritos_enviados_iptv integer,
   perc_gabaritos_lidos integer,
   atualizacao timestamptz,
+  serie text,
   escola_id text generated always as (
     md5(coalesce(ure,'') || '|' || coalesce(escola,''))
   ) stored,

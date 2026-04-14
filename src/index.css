@@ -88,14 +88,31 @@ tbody tr[style*="cursor"] td.td-name::after { content: " ›"; color: var(--blue
 
 .td-name {
   font-weight: 600;
-  min-width: 160px;
-  max-width: 320px;
+  width: 220px;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+thead th.td-name { width: 220px; max-width: 220px; }
+.td-serie {
+  font-weight: 700;
+  width: 80px;
+  color: var(--blue-dark);
+  white-space: nowrap;
+}
+thead th.td-serie { width: 80px; }
 .td-num { text-align: right !important; }
 thead th.td-num { text-align: right !important; }
+
+.row-total td {
+  background: var(--blue-pale);
+  border-top: 2px solid var(--blue);
+  font-weight: 900;
+  color: var(--blue-dark);
+}
+.row-total td.td-serie { color: var(--blue-dark); }
+.row-total:hover { background: var(--blue-pale) !important; }
 
 .pct-badge { display: inline-block; padding: 4px 10px; border-radius: 99px; font-weight: 900; font-size: 13px; color: var(--white); min-width: 62px; text-align: center; }
 .pct-good { background: var(--green); }

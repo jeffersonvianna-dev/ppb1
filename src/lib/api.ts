@@ -12,6 +12,7 @@ export interface AggRow {
   escola?: string;
   turma_id?: string;
   turma?: string;
+  serie?: string;
   total_escolas?: number;
   total_turmas?: number;
   total_alunos?: number;
@@ -44,6 +45,15 @@ export async function fetchSummary(bimestre: number, tipoProva: string): Promise
   });
   if (error) throw error;
   return (data && data[0]) || null;
+}
+
+export async function fetchResumoView(bimestre: number, tipoProva: string): Promise<AggRow[]> {
+  const { data, error } = await supabase.rpc('ppb1_get_resumo_table', {
+    p_bimestre: bimestre,
+    p_tipo_prova: tipoProva,
+  });
+  if (error) throw error;
+  return data || [];
 }
 
 export async function fetchSeducView(bimestre: number, tipoProva: string): Promise<AggRow[]> {

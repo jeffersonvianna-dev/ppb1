@@ -1,4 +1,4 @@
-export type ActiveView = 'seduc' | 'ure' | 'escola';
+export type ActiveView = 'resumo' | 'seduc' | 'ure' | 'escola';
 
 export interface ColumnDef {
   key: string;
@@ -9,6 +9,12 @@ export interface ColumnDef {
 }
 
 export const COLUMNS: Record<ActiveView, ColumnDef[]> = {
+  resumo: [
+    { key: 'serie', label: 'Série', sortable: true, cls: 'td-serie', kind: 'text' },
+    { key: 'total_alunos', label: 'Estudantes', sortable: true, cls: 'td-num', kind: 'int' },
+    { key: 'perc_dia1', label: '% Dia 1', sortable: true, cls: 'td-num', kind: 'pct' },
+    { key: 'perc_dia2', label: '% Dia 2', sortable: true, cls: 'td-num', kind: 'pct' },
+  ],
   seduc: [
     { key: 'ure', label: 'URE', sortable: true, cls: 'td-name', kind: 'text' },
     { key: 'total_escolas', label: 'Escolas', sortable: true, cls: 'td-num', kind: 'int' },
@@ -26,6 +32,7 @@ export const COLUMNS: Record<ActiveView, ColumnDef[]> = {
   ],
   escola: [
     { key: 'turma', label: 'Turma', sortable: true, cls: 'td-name', kind: 'text' },
+    { key: 'serie', label: 'Série', sortable: true, cls: 'td-serie', kind: 'text' },
     { key: 'total_alunos', label: 'Estudantes', sortable: true, cls: 'td-num', kind: 'int' },
     { key: 'perc_dia1', label: '% Dia 1', sortable: true, cls: 'td-num', kind: 'pct' },
     { key: 'perc_dia2', label: '% Dia 2', sortable: true, cls: 'td-num', kind: 'pct' },

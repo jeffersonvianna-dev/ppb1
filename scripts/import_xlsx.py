@@ -108,6 +108,19 @@ try:
         copy_sql = f'COPY "2026_ppb1"."resultados_turmas" ({cols_sql}) FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER E\'\\t\', NULL \'\')'
         print("[5/5] Executando COPY FROM STDIN")
         cur.copy_expert(copy_sql, buf)
+        # populate serie from nome_prova (NEF/NEM based on "ano"/"série")
+        cur.execute(r"""
+            UPDATE "2026_ppb1".resultados_turmas t
+            SET serie = CASE
+              WHEN np IS NULL THEN NULL
+              WHEN np ILIKE '%ano%' THEN substring(np from '^(\d+)') || 'EF'
+              ELSE substring(np from '^(\d+)') || 'EM'
+            END
+            FROM (SELECT id, coalesce(nome_prova_roxo, nome_prova_laranja,
+                                      nome_prova_verde, nome_prova_amarela) AS np
+                  FROM "2026_ppb1".resultados_turmas) x
+            WHERE t.id = x.id
+        """)
     conn.commit()
     print("OK — commit feito")
 except Exception:

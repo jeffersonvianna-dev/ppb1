@@ -55,17 +55,21 @@ export default function DataTable({ columns, data, isLoading, sortConfig, onSort
               </td>
             </tr>
           ) : (
-            data.map((row, idx) => (
+            data.map((row, idx) => {
+              const isTotal = row.serie === 'TOTAL';
+              return (
               <tr
                 key={idx}
-                onClick={() => onRowClick?.(row)}
-                style={onRowClick ? { cursor: 'pointer' } : undefined}
+                onClick={() => !isTotal && onRowClick?.(row)}
+                className={isTotal ? 'row-total' : undefined}
+                style={onRowClick && !isTotal ? { cursor: 'pointer' } : undefined}
               >
                 {columns.map((col) => (
                   <td key={col.key} className={col.cls}>{renderCell(row, col)}</td>
                 ))}
               </tr>
-            ))
+              );
+            })
           )}
         </tbody>
       </table>

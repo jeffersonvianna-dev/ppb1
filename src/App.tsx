@@ -8,6 +8,7 @@ import { COLUMNS, type ActiveView } from './components/tableColumns';
 import {
   fetchAvailableFilters,
   fetchEscolaView,
+  fetchResumoView,
   fetchSeducView,
   fetchSummary,
   fetchUreView,
@@ -17,7 +18,7 @@ import {
 type SortConfig = { key: string; direction: 'asc' | 'desc' };
 
 export default function App() {
-  const [activeView, setActiveView] = useState<ActiveView>('seduc');
+  const [activeView, setActiveView] = useState<ActiveView>('resumo');
   const [selectedUre, setSelectedUre] = useState('');
   const [selectedEscolaId, setSelectedEscolaId] = useState('');
   const [selectedEscolaLabel, setSelectedEscolaLabel] = useState('');
@@ -33,6 +34,12 @@ export default function App() {
   const { data: summary = null, isLoading: isLoadingSummary } = useQuery({
     queryKey: ['summary', bimestre, tipoProva],
     queryFn: () => fetchSummary(bimestre!, tipoProva),
+    enabled: ready,
+  });
+
+  const { data: resumoData = [], isLoading: isLoadingResumo } = useQuery({
+    queryKey: ['resumo', bimestre, tipoProva],
+    queryFn: () => fetchResumoView(bimestre!, tipoProva),
     enabled: ready,
   });
 
@@ -77,18 +84,27 @@ export default function App() {
   }, [activeView]);
 
   const rawData =
-    activeView === 'seduc' ? seducData : activeView === 'ure' ? ureData : escolaData;
+    activeView === 'resumo' ? resumoData :
+    activeView === 'seduc' ? seducData :
+    activeView === 'ure' ? ureData : escolaData;
   const isLoadingData =
-    activeView === 'seduc' ? isLoadingSeduc : activeView === 'ure' ? isLoadingUre : isLoadingEscola;
+    activeView === 'resumo' ? isLoadingResumo :
+    activeView === 'seduc' ? isLoadingSeduc :
+    activeView === 'ure' ? isLoadingUre : isLoadingEscola;
 
   const visibleData = useMemo(() => {
     let rows: AggRow[] = [...rawData];
     if (search) {
       const q = search.toLowerCase();
-      const key = activeView === 'seduc' ? 'ure' : activeView === 'ure' ? 'escola' : 'turma';
+      const key =
+        activeView === 'resumo' ? 'serie' :
+        activeView === 'seduc' ? 'ure' :
+        activeView === 'ure' ? 'escola' : 'turma';
       rows = rows.filter((r) => String(r[key] ?? '').toLowerCase().includes(q));
     }
-    rows.sort((a, b) => {
+    // preserve server order for resumo on default sort
+    const preserveOrder = activeView === 'resumo' && sortConfig.key === 'perc_dia2' && sortConfig.direction === 'asc';
+    if (!preserveOrder) rows.sort((a, b) => {
       const va = a[sortConfig.key];
       const vb = b[sortConfig.key];
       if (typeof va === 'string' || typeof vb === 'string') {
@@ -100,8 +116,17 @@ export default function App() {
       const nb = Number(vb ?? 0);
       return sortConfig.direction === 'asc' ? na - nb : nb - na;
     });
+    // Append TOTAL row at end in resumo view (always last, never sorted/filtered)
+    if (activeView === 'resumo' && summary && rawData.length > 0) {
+      rows.push({
+        serie: 'TOTAL',
+        total_alunos: summary.total_alunos,
+        perc_dia1: Number(summary.perc_dia1),
+        perc_dia2: Number(summary.perc_dia2),
+      });
+    }
     return rows;
-  }, [rawData, search, sortConfig, activeView]);
+  }, [rawData, search, sortConfig, activeView, summary]);
 
   const handleSort = (key: string) => {
     if (sortConfig.key === key) {
@@ -131,6 +156,7 @@ export default function App() {
         <div className="table-section">
           <div className="table-top">
             <div className="tabs">
+              <button className={`tab-button ${activeView === 'resumo' ? 'active' : ''}`} onClick={() => setActiveView('resumo')}>Resumo</button>
               <button className={`tab-button ${activeView === 'seduc' ? 'active' : ''}`} onClick={() => setActiveView('seduc')}>SEDUC</button>
               <button className={`tab-button ${activeView === 'ure' ? 'active' : ''}`} onClick={() => setActiveView('ure')}>URE</button>
               <button className={`tab-button ${activeView === 'escola' ? 'active' : ''}`} onClick={() => setActiveView('escola')}>Escola</button>
