@@ -212,7 +212,8 @@ export default function App() {
             isLoading={isLoadingData}
             sortConfig={sortConfig}
             onSort={handleSort}
-            onRowClick={activeView !== 'escola' ? handleRowClick : undefined}
+            onRowClick={activeView === 'seduc' || activeView === 'ure' ? handleRowClick : undefined}
+            variant={activeView === 'resumo' ? 'resumo' : 'default'}
           />
         </div>
       </main>

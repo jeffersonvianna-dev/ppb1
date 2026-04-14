@@ -21,11 +21,12 @@ interface DataTableProps {
   sortConfig: { key: string; direction: 'asc' | 'desc' };
   onSort: (key: string) => void;
   onRowClick?: (row: AggRow) => void;
+  variant?: 'default' | 'resumo';
 }
 
-export default function DataTable({ columns, data, isLoading, sortConfig, onSort, onRowClick }: DataTableProps) {
+export default function DataTable({ columns, data, isLoading, sortConfig, onSort, onRowClick, variant = 'default' }: DataTableProps) {
   return (
-    <div className="table-wrap">
+    <div className={`table-wrap ${variant === 'resumo' ? 'resumo' : ''}`}>
       <table>
         <thead>
           <tr>
