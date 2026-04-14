@@ -59,7 +59,10 @@ let cache: Promise<Bundle> | null = null;
 
 export function loadBundle(): Promise<Bundle> {
   if (!cache) {
-    cache = fetch('/bundle.json', { cache: 'force-cache' }).then((r) => {
+    // `default`: navegador respeita Cache-Control do Vercel (max-age=300, SWR 3600).
+    // Revalida via ETag a cada 5min — quando reloadamos o bundle, usuários veem o novo
+    // sem precisar de hard refresh.
+    cache = fetch('/bundle.json', { cache: 'default' }).then((r) => {
       if (!r.ok) throw new Error(`Falha ao carregar bundle: ${r.status}`);
       return r.json() as Promise<Bundle>;
     });
