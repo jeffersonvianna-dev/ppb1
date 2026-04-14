@@ -15,22 +15,25 @@ Drilldown SEDUC → URE → Escola e filtros (busca, série) são `Array.filter(
 
 Trade-off aceito: bundle precisa ser regerado e committed quando os dados mudam.
 
-## Fluxo de atualização de dados
+## Fluxo de atualização de dados (várias vezes/dia)
 
+**Comando único:**
 ```bash
-# 1) carrega xlsx no Supabase
 SUPABASE_DB_URL="postgresql://postgres.aingjvjyqhijogpyikii:SENHA@aws-1-us-east-1.pooler.supabase.com:5432/postgres" \
-XLSX_PATH="C:/Users/jeffe/Downloads/Dados Completos ....xlsx" \
-python scripts/import_xlsx.py
-
-# 2) gera bundle pré-agregado
-SUPABASE_DB_URL="..." python scripts/build_bundle.py
-
-# 3) commit + push (Vercel deploy automático em ~30s)
-git add public/bundle.json
-git commit -m "data: update bundle"
-git push
+XLSX_DIA1="C:/Users/jeffe/Downloads/Dados Completos  Dia 1-...xlsx" \
+XLSX_DIA2="C:/Users/jeffe/Downloads/Dados Completos  Dia 2-...xlsx" \
+python scripts/refresh.py
 ```
+
+`refresh.py` faz:
+1. `import_xlsx.py` — lê os 2 xlsx, filtra `dia_prova=1` no Dia1 file (que pode vir misto), usa todo o Dia2 file, deriva `serie` em pandas, dedup em (URE+Escola+Turma+DIA_PROVA), `TRUNCATE` + `COPY` no Supabase
+2. `build_bundle.py` — pré-agrega tudo em `public/bundle.json`
+3. `git commit` + `git push` → Vercel deploy automático (~30s) → CDN propaga em ≤5min
+
+**Observação importante** sobre os arquivos do Sistema X:
+- "Dia 1" file vem com 100k linhas truncadas, **mistura D1 + D2** (export quebrado quando volume excede limite). Filtramos para `DIA_PROVA=1`.
+- "Dia 2" file vem só com `DIA_PROVA=2`, completo.
+- Sem essa filtragem teria ~50k duplicatas.
 
 CDN repropaga em ≤5min (`Cache-Control: max-age=300, s-maxage=300, stale-while-revalidate=3600` em `vercel.json`).
 
@@ -58,16 +61,17 @@ supabase/migrations/
 vercel.json                       # Cache-Control para /bundle.json
 ```
 
-## Schema `2026_ppb1.resultados_turmas`
+## Schema slim `2026_ppb1.resultados_turmas` (10 colunas)
 
-Colunas relevantes:
-- `ure`, `municipio`, `escola`, `turma`
-- `bimestre`, `tipo_prova`, `dia_prova` (1 ou 2 — coluna L do xlsx)
+Apenas o essencial — colunas dispensáveis (id_publicacao_*, id_modelo_*, qtd_envios_iptv_*, qtd_gabaritos_*, datas, municipio, nome_prova_*, etc.) NÃO são carregadas. `serie` é derivada localmente em pandas antes do COPY.
+
+- `ure`, `escola`, `turma` (text, NOT NULL)
+- `bimestre`, `tipo_prova`, `dia_prova` (1 ou 2)
+- `serie` (text — `4EF`..`9EF`/`1EM`..`3EM`; derivada via `^(\d+)` + `ano`→`EF` / `série`→`EM` em pandas)
 - `total_alunos_turma` (denominador), `gabaritos_lidos_cmspp` (numerador)
-- `serie` (text, derivada do `nome_prova_*` via regex `^(\d+)` + `ano`→`EF` / `série`→`EM`)
-- `escola_id` = `md5(ure|escola)` (generated, evita colisão)
-- `turma_id` = `md5(ure|escola|turma)` (generated)
 - `atualizacao` (timestamptz — exibido no header)
+- **Generated:** `escola_id = md5(ure|escola)`, `turma_id = md5(ure|escola|turma)`
+- **Constraint:** `UNIQUE (turma_id, dia_prova)` — proteção extra contra dups
 
 ## Métricas
 
