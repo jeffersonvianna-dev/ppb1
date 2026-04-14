@@ -28,6 +28,12 @@ export interface SummaryRow {
   perc_dia2: number;
 }
 
+export async function fetchLastUpdated(): Promise<string | null> {
+  const { data, error } = await supabase.rpc('ppb1_get_last_updated');
+  if (error) throw error;
+  return (data as string | null) ?? null;
+}
+
 export async function fetchAvailableFilters(): Promise<Filters> {
   const { data, error } = await supabase.rpc('ppb1_get_available_filters');
   if (error) throw error;

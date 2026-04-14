@@ -1,4 +1,26 @@
-export default function Header({ lastUpdated }: { lastUpdated: string | null }) {
+import { useQuery } from '@tanstack/react-query';
+import { fetchLastUpdated } from '../lib/api';
+
+const MESES = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+];
+
+function formatUpdated(iso: string | null | undefined): string {
+  if (!iso) return 'Carregando...';
+  const d = new Date(iso);
+  // Exibe em horário de Brasília (UTC-3)
+  const brt = new Date(d.getTime() - 3 * 60 * 60 * 1000);
+  const dia = brt.getUTCDate();
+  const mes = MESES[brt.getUTCMonth()];
+  const hh = String(brt.getUTCHours()).padStart(2, '0');
+  const mm = String(brt.getUTCMinutes()).padStart(2, '0');
+  return `${dia} de ${mes}, ${hh}h${mm}`;
+}
+
+export default function Header() {
+  const { data: lastUpdated } = useQuery({ queryKey: ['last_updated'], queryFn: fetchLastUpdated });
+
   return (
     <header className="header">
       <div className="header-inner">
@@ -9,7 +31,7 @@ export default function Header({ lastUpdated }: { lastUpdated: string | null }) 
           </div>
         </div>
         <div className="header-stamp">
-          {lastUpdated ? <>Atualizado em <strong>{lastUpdated}</strong></> : 'Carregando...'}
+          Atualizado em <strong>{formatUpdated(lastUpdated)}</strong>
         </div>
       </div>
     </header>

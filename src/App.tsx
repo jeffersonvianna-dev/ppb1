@@ -149,7 +149,7 @@ export default function App() {
 
   return (
     <div>
-      <Header lastUpdated="14 de abril de 2026" />
+      <Header />
       <main className="page">
         <SummaryCards summary={summary} isLoading={isLoadingSummary} />
 
