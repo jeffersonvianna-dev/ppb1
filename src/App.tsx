@@ -11,10 +11,39 @@ type SortConfig = { key: string; direction: 'asc' | 'desc' };
 
 type Row = Record<string, string | number | null | undefined>;
 
+interface NavState {
+  view: ActiveView;
+  ure: string;
+  escola_id: string;
+}
+
+const VALID_VIEWS: ActiveView[] = ['resumo', 'seduc', 'ure', 'escola'];
+
+function readUrl(): NavState {
+  const params = new URLSearchParams(window.location.search);
+  const v = params.get('view') as ActiveView | null;
+  return {
+    view: v && VALID_VIEWS.includes(v) ? v : 'seduc',
+    ure: params.get('ure') ?? '',
+    escola_id: params.get('escola_id') ?? '',
+  };
+}
+
+function writeUrl(s: NavState, replace: boolean) {
+  const params = new URLSearchParams();
+  params.set('view', s.view);
+  if (s.ure) params.set('ure', s.ure);
+  if (s.escola_id) params.set('escola_id', s.escola_id);
+  const url = `${window.location.pathname}?${params.toString()}`;
+  if (replace) window.history.replaceState(s, '', url);
+  else window.history.pushState(s, '', url);
+}
+
 export default function App() {
-  const [activeView, setActiveView] = useState<ActiveView>('resumo');
-  const [selectedUre, setSelectedUre] = useState('');
-  const [selectedEscolaId, setSelectedEscolaId] = useState('');
+  const initial = typeof window !== 'undefined' ? readUrl() : { view: 'seduc' as ActiveView, ure: '', escola_id: '' };
+  const [activeView, setActiveViewRaw] = useState<ActiveView>(initial.view);
+  const [selectedUre, setSelectedUre] = useState(initial.ure);
+  const [selectedEscolaId, setSelectedEscolaId] = useState(initial.escola_id);
   const [selectedEscolaLabel, setSelectedEscolaLabel] = useState('');
   const [search, setSearch] = useState('');
   const [serieFilter, setSerieFilter] = useState('');
@@ -37,6 +66,32 @@ export default function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView]);
+
+  // Navigation: update URL, support browser back
+  const navigate = (next: Partial<NavState>) => {
+    const view = next.view ?? activeView;
+    const ure = next.ure ?? selectedUre;
+    const escola_id = next.escola_id ?? selectedEscolaId;
+    writeUrl({ view, ure, escola_id }, false);
+    setActiveViewRaw(view);
+    setSelectedUre(ure);
+    setSelectedEscolaId(escola_id);
+  };
+  const setActiveView = (v: ActiveView) => navigate({ view: v });
+
+  useEffect(() => {
+    // Replace initial entry so first back goes elsewhere, not stays here
+    writeUrl({ view: activeView, ure: selectedUre, escola_id: selectedEscolaId }, true);
+    const onPop = () => {
+      const s = readUrl();
+      setActiveViewRaw(s.view);
+      setSelectedUre(s.ure);
+      setSelectedEscolaId(s.escola_id);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { data: bundle, isLoading } = useQuery<Bundle>({
     queryKey: ['bundle'],
@@ -138,12 +193,10 @@ export default function App() {
 
   const handleRowClick = (row: Row) => {
     if (activeView === 'seduc' && row.ure) {
-      setSelectedUre(String(row.ure));
-      setActiveView('ure');
+      navigate({ view: 'ure', ure: String(row.ure), escola_id: '' });
     } else if (activeView === 'ure' && row.escola_id) {
-      setSelectedEscolaId(String(row.escola_id));
       setSelectedEscolaLabel(String(row.escola ?? ''));
-      setActiveView('escola');
+      navigate({ view: 'escola', escola_id: String(row.escola_id) });
     }
   };
 
@@ -159,10 +212,10 @@ export default function App() {
         <div className="table-section">
           <div className="table-top">
             <div className="tabs">
-              <button className={`tab-button ${activeView === 'resumo' ? 'active' : ''}`} onClick={() => setActiveView('resumo')}>Resumo</button>
+              <button className={`tab-button ${activeView === 'resumo' ? 'active' : ''}`} onClick={() => setActiveView('resumo')}>RESUMO</button>
               <button className={`tab-button ${activeView === 'seduc' ? 'active' : ''}`} onClick={() => setActiveView('seduc')}>SEDUC</button>
               <button className={`tab-button ${activeView === 'ure' ? 'active' : ''}`} onClick={() => setActiveView('ure')}>URE</button>
-              <button className={`tab-button ${activeView === 'escola' ? 'active' : ''}`} onClick={() => setActiveView('escola')}>Escola</button>
+              <button className={`tab-button ${activeView === 'escola' ? 'active' : ''}`} onClick={() => setActiveView('escola')}>ESCOLA</button>
             </div>
 
             <div className="table-filters">
@@ -171,7 +224,7 @@ export default function App() {
                   label="URE"
                   options={ureOptions}
                   value={resolvedUre}
-                  onChange={(v) => { setSelectedUre(v); setSelectedEscolaId(''); }}
+                  onChange={(v) => navigate({ ure: v, escola_id: '' })}
                   placeholder="Selecione"
                   searchPlaceholder="Buscar URE..."
                 />
@@ -182,9 +235,9 @@ export default function App() {
                   options={escolaOptions}
                   value={resolvedEscolaId}
                   onChange={(v) => {
-                    setSelectedEscolaId(v);
                     const opt = escolaOptions.find((o) => o.value === v);
                     if (opt) setSelectedEscolaLabel(opt.label);
+                    navigate({ escola_id: v });
                   }}
                   placeholder="Selecione"
                   searchPlaceholder="Buscar escola..."

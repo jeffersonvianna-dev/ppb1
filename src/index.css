@@ -44,9 +44,9 @@ body {
 .card-meta { font-size: 12px; color: var(--text-muted); margin-top: 8px; font-weight: 500; }
 
 .table-section { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-.table-top { padding: 16px 20px; border-bottom: 1px solid var(--gray-mid); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.table-top { padding: 16px 20px; border-bottom: 1px solid var(--gray-mid); display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .tabs { display: flex; gap: 6px; }
-.tab-button { height: 38px; padding: 0 20px; border: 1px solid var(--gray-mid); border-radius: 8px; background: transparent; color: var(--text-strong); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; }
+.tab-button { height: 40px; padding: 0 20px; border: 1px solid var(--gray-mid); border-radius: 8px; background: transparent; color: var(--text-strong); font: inherit; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; transition: all .15s; }
 .tab-button.active { background: var(--blue); border-color: var(--blue); color: var(--white); }
 .tab-button:not(.active):hover { border-color: var(--blue); color: var(--blue); }
 .table-filters { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
@@ -61,7 +61,7 @@ input[type="search"]::placeholder { color: var(--text-muted); }
 .field-inline { min-width: 200px; }
 .field-combobox { position: relative; min-width: 250px; }
 .field-combobox.field-compact { min-width: 120px; }
-.combobox-trigger { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid var(--gray-mid); border-radius: 8px; background: var(--white); color: var(--text); font: inherit; font-size: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.combobox-trigger { width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--gray-mid); border-radius: 8px; background: var(--white); color: var(--text); font: inherit; font-size: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .combobox-trigger:hover, .combobox-trigger.open { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0, 91, 172, .1); }
 .combobox-count { flex-shrink: 0; padding: 3px 8px; border-radius: 999px; background: var(--blue-pale); color: var(--blue-dark); font-size: 12px; font-weight: 800; }
 .combobox-panel { position: absolute; top: calc(100% + 8px); right: 0; width: min(360px, 80vw); padding: 12px; border: 1px solid var(--gray-mid); border-radius: 12px; background: var(--white); box-shadow: var(--shadow-lg); z-index: 40; }
