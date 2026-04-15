@@ -6,7 +6,8 @@ export function fmtIntAbbr(v: number | null | undefined): string {
   const n = Number(v ?? 0);
   if (n >= 1_000_000) {
     const m = n / 1_000_000;
-    return `${m.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} milhões`;
+    const unit = n < 2_000_000 ? 'milhão' : 'milhões';
+    return `${m.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${unit}`;
   }
   if (n >= 1_000) {
     const k = n / 1_000;
