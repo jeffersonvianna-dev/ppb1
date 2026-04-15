@@ -1,5 +1,5 @@
 import type { ColumnDef } from './tableColumns';
-import { fmtInt, fmtPct } from '../lib/helpers';
+import { fmtInt, fmtIntAbbr, fmtPct } from '../lib/helpers';
 
 export type Row = Record<string, string | number | null | undefined>;
 
@@ -7,6 +7,7 @@ function renderCell(row: Row, col: ColumnDef) {
   const raw = row[col.key];
   if (raw === null || raw === undefined || raw === '') return '—';
   if (col.kind === 'int') return fmtInt(Number(raw));
+  if (col.kind === 'intAbbr') return fmtIntAbbr(Number(raw));
   if (col.kind === 'pct') {
     const n = Number(raw);
     const cls = n >= 80 ? 'pct-good' : n >= 50 ? 'pct-mid' : 'pct-low';

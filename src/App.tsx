@@ -176,6 +176,8 @@ export default function App() {
       rows.push({
         serie: 'TOTAL',
         total_alunos: bundle.summary.total_alunos,
+        lidos_dia1: bundle.summary.total_lidos_dia1,
+        lidos_dia2: bundle.summary.total_lidos_dia2,
         perc_dia1: Number(bundle.summary.perc_dia1),
         perc_dia2: Number(bundle.summary.perc_dia2),
       });

@@ -5,14 +5,16 @@ export interface ColumnDef {
   label: string;
   sortable: boolean;
   cls: string;
-  kind: 'text' | 'int' | 'pct';
+  kind: 'text' | 'int' | 'intAbbr' | 'pct';
 }
 
 export const COLUMNS: Record<ActiveView, ColumnDef[]> = {
   resumo: [
     { key: 'serie', label: 'Série', sortable: true, cls: 'td-serie', kind: 'text' },
-    { key: 'total_alunos', label: 'Estudantes', sortable: true, cls: 'td-num', kind: 'int' },
+    { key: 'total_alunos', label: 'Estudantes', sortable: true, cls: 'td-num', kind: 'intAbbr' },
+    { key: 'lidos_dia1', label: 'Qtd Dia 1', sortable: true, cls: 'td-num', kind: 'intAbbr' },
     { key: 'perc_dia1', label: '% Dia 1', sortable: true, cls: 'td-num', kind: 'pct' },
+    { key: 'lidos_dia2', label: 'Qtd Dia 2', sortable: true, cls: 'td-num', kind: 'intAbbr' },
     { key: 'perc_dia2', label: '% Dia 2', sortable: true, cls: 'td-num', kind: 'pct' },
   ],
   seduc: [

@@ -13,6 +13,8 @@ export interface ResumoRow {
   serie: string;
   serie_order: number;
   total_alunos: number;
+  lidos_dia1: number;
+  lidos_dia2: number;
   perc_dia1: number;
   perc_dia2: number;
 }

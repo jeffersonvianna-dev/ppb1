@@ -78,6 +78,8 @@ resumo = fetch_dicts("""
                when '7EF' then 4 when '8EF' then 5 when '9EF' then 6
                when '1EM' then 7 when '2EM' then 8 when '3EM' then 9 else 99 end as serie_order,
     sum(alunos_turma)::bigint as total_alunos,
+    sum(lidos_d1)::bigint as lidos_dia1,
+    sum(lidos_d2)::bigint as lidos_dia2,
     case when sum(alunos_d1)>0 then round(100.0*sum(lidos_d1)/sum(alunos_d1),2) else 0 end as perc_dia1,
     case when sum(alunos_d2)>0 then round(100.0*sum(lidos_d2)/sum(alunos_d2),2) else 0 end as perc_dia2
   from tmp_por_turma where serie is not null
