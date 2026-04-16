@@ -6,7 +6,8 @@ export function fmtIntAbbr(v: number | null | undefined): string {
   const n = Number(v ?? 0);
   if (n >= 1_000_000) {
     const m = n / 1_000_000;
-    const unit = n < 2_000_000 ? 'milhão' : 'milhões';
+    // Singular só quando o valor exibido arredonda para "1,0"; caso contrário plural
+    const unit = Math.round(m * 10) === 10 ? 'milhão' : 'milhões';
     return `${m.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${unit}`;
   }
   if (n >= 1_000) {
