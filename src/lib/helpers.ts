@@ -18,6 +18,7 @@ export function fmtIntAbbr(v: number | null | undefined): string {
 }
 
 export function fmtPct(v: number | null | undefined): string {
-  const n = Number(v ?? 0);
+  // Cap em 100% — anomalias do sistema-fonte às vezes deixam lidos > total_alunos
+  const n = Math.min(Number(v ?? 0), 100);
   return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 }
