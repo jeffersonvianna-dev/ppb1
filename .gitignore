@@ -7,3 +7,6 @@ dist
 .DS_Store
 
 .vercel
+.refresh-state.json
+.claude/
+__pycache__/

@@ -5,7 +5,7 @@ import FilterSelect from './components/FilterSelect';
 import SummaryCards from './components/SummaryCards';
 import DataTable from './components/DataTable';
 import { COLUMNS, type ActiveView } from './components/tableColumns';
-import { loadBundle, type Bundle } from './lib/bundle';
+import { loadBundle, loadTurmas, type Bundle, type TurmasBundle } from './lib/bundle';
 
 type SortConfig = { key: string; direction: 'asc' | 'desc' };
 
@@ -97,6 +97,11 @@ export default function App() {
     queryKey: ['bundle'],
     queryFn: loadBundle,
   });
+  const { data: turmasBundle, isLoading: isLoadingTurmas } = useQuery<TurmasBundle>({
+    queryKey: ['turmas'],
+    queryFn: loadTurmas,
+    enabled: activeView === 'escola',
+  });
 
   const ureList = useMemo(() => (bundle ? bundle.seduc.map((r) => r.ure) : []), [bundle]);
 
@@ -123,9 +128,9 @@ export default function App() {
   }, [resolvedEscolaId, selectedEscolaLabel, bundle]);
 
   const turmasByEscola = useMemo(() => {
-    if (!bundle) return [];
-    return bundle.turmas.filter((t) => t.escola_id === resolvedEscolaId);
-  }, [bundle, resolvedEscolaId]);
+    if (!turmasBundle) return [];
+    return turmasBundle.turmas.filter((t) => t.escola_id === resolvedEscolaId);
+  }, [turmasBundle, resolvedEscolaId]);
 
   const rawData: Row[] = useMemo(() => {
     if (!bundle) return [];
@@ -278,7 +283,7 @@ export default function App() {
           <DataTable
             columns={COLUMNS[activeView]}
             data={visibleData}
-            isLoading={isLoading}
+            isLoading={isLoading || (activeView === 'escola' && isLoadingTurmas)}
             sortConfig={sortConfig}
             onSort={handleSort}
             onRowClick={activeView === 'seduc' || activeView === 'ure' ? handleRowClick : undefined}

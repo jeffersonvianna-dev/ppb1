@@ -1,6 +1,9 @@
 """
-Gera public/bundle.json com todas as agregações.
+Gera public/bundle.json (core, ~500 KB) e public/turmas.json (lazy, ~14 MB).
 Depois de rodar, faça commit + deploy para a CDN do Vercel servir.
+
+bundle.json é baixado em todo carregamento (RESUMO/SEDUC/URE).
+turmas.json só é baixado quando o usuário entra na aba ESCOLA — economiza bandwidth.
 
 Uso:
     SUPABASE_DB_URL=postgresql://... python scripts/build_bundle.py
@@ -22,8 +25,10 @@ if not DB_URL:
     print("ERRO: defina SUPABASE_DB_URL", file=sys.stderr)
     sys.exit(1)
 
-OUT = Path(__file__).resolve().parent.parent / "public" / "bundle.json"
-OUT.parent.mkdir(parents=True, exist_ok=True)
+OUT_DIR = Path(__file__).resolve().parent.parent / "public"
+OUT = OUT_DIR / "bundle.json"
+OUT_TURMAS = OUT_DIR / "turmas.json"
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 BIMESTRE = 1
 TIPO = "PROVA_PAULISTA_IMPRESSA"
@@ -140,9 +145,14 @@ bundle = clean({
     "resumo": resumo,
     "seduc": seduc,
     "escolas": escolas,
+})
+turmas_payload = clean({
+    "atualizacao": atualizacao_iso,
     "turmas": turmas,
 })
 
 OUT.write_text(json.dumps(bundle, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-size_mb = OUT.stat().st_size / 1024 / 1024
-print(f"OK — {OUT} ({size_mb:.2f} MB, {len(turmas)} turmas, {len(escolas)} escolas, {len(seduc)} UREs) em {time.time()-t0:.1f}s")
+OUT_TURMAS.write_text(json.dumps(turmas_payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+size_kb = OUT.stat().st_size / 1024
+size_turmas_mb = OUT_TURMAS.stat().st_size / 1024 / 1024
+print(f"OK — bundle.json {size_kb:.0f} KB | turmas.json {size_turmas_mb:.2f} MB ({len(turmas)} turmas, {len(escolas)} escolas, {len(seduc)} UREs) em {time.time()-t0:.1f}s")

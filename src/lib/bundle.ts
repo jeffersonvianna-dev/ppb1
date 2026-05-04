@@ -1,5 +1,9 @@
 // Bundle estático pré-agregado, servido pela CDN do Vercel.
 // Gerado por `scripts/build_bundle.py`. Sem fetch no Supabase em runtime.
+//
+// Split em dois arquivos para economizar bandwidth:
+//   - /bundle.json (~100 KB brotli): core para RESUMO/SEDUC/URE.
+//   - /turmas.json (~2.5 MB brotli): só baixa quando entra na aba ESCOLA.
 
 export interface SummaryRow {
   total_alunos: number;
@@ -54,20 +58,32 @@ export interface Bundle {
   resumo: ResumoRow[];
   seduc: SeducRow[];
   escolas: EscolaRow[];
+}
+
+export interface TurmasBundle {
+  atualizacao: string | null;
   turmas: TurmaRow[];
 }
 
-let cache: Promise<Bundle> | null = null;
+let bundleCache: Promise<Bundle> | null = null;
+let turmasCache: Promise<TurmasBundle> | null = null;
 
 export function loadBundle(): Promise<Bundle> {
-  if (!cache) {
-    // `default`: navegador respeita Cache-Control do Vercel (max-age=300, SWR 3600).
-    // Revalida via ETag a cada 5min — quando reloadamos o bundle, usuários veem o novo
-    // sem precisar de hard refresh.
-    cache = fetch('/bundle.json', { cache: 'default' }).then((r) => {
+  if (!bundleCache) {
+    bundleCache = fetch('/bundle.json', { cache: 'default' }).then((r) => {
       if (!r.ok) throw new Error(`Falha ao carregar bundle: ${r.status}`);
       return r.json() as Promise<Bundle>;
     });
   }
-  return cache;
+  return bundleCache;
+}
+
+export function loadTurmas(): Promise<TurmasBundle> {
+  if (!turmasCache) {
+    turmasCache = fetch('/turmas.json', { cache: 'default' }).then((r) => {
+      if (!r.ok) throw new Error(`Falha ao carregar turmas: ${r.status}`);
+      return r.json() as Promise<TurmasBundle>;
+    });
+  }
+  return turmasCache;
 }
