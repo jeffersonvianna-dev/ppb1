@@ -10,3 +10,6 @@ dist
 .refresh-state.json
 .claude/
 __pycache__/
+
+.env*
+.mcp.json
